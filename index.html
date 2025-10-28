@@ -87,22 +87,7 @@
   <script>
     // ====== CONFIG ======
     // If using Google Sheets (Publish to web → CSV link), paste it here:
-    const SHEET_CSV_URL = ""; // e.g. "https://docs.google.com/spreadsheets/d/e/…/pub?output=csv"
-    // If you keep a CSV file in this repo (same folder), put its path here:
-    const LOCAL_CSV_PATH = "data.csv";
-
-    // ====== SAMPLE DATA (used only if no CSV is reachable) ======
-    const SAMPLE_ROWS = [
-      {"Restaurant Name":"Broaster Chicken","Address":"","Suburb":"Auburn","Cuisine":"American","Halal Status":"Halal Certified","Cost":"$","Notes":"","Website":""},
-      {"Restaurant Name":"Chubby Buns","Address":"","Suburb":"Auburn","Cuisine":"American","Halal Status":"Halal Certified","Cost":"$","Notes":"","Website":""},
-      {"Restaurant Name":"Dougie's Grill Burgers","Address":"","Suburb":"Auburn","Cuisine":"American","Halal Status":"Halal Certified","Cost":"$","Notes":"Smash burgers","Website":""},
-      {"Restaurant Name":"Flipp Burgers","Address":"","Suburb":"Auburn","Cuisine":"American","Halal Status":"Halal Certified","Cost":"$","Notes":"","Website":""},
-      {"Restaurant Name":"Nash Brothers","Address":"","Suburb":"Auburn","Cuisine":"American","Halal Status":"Halal Certified","Cost":"$","Notes":"","Website":""},
-      {"Restaurant Name":"Belles Hot Chicken","Address":"","Suburb":"Circular Quay","Cuisine":"American","Halal Status":"Halal Certified","Cost":"$","Notes":"Halal chicken supply at selected stores","Website":""},
-      {"Restaurant Name":"Betty’s Burgers","Address":"","Suburb":"Circular Quay","Cuisine":"American","Halal Status":"Halal Suitable","Cost":"$","Notes":"Ask for no bacon, separate grill not guaranteed","Website":""},
-      {"Restaurant Name":"Belles Hot Chicken","Address":"","Suburb":"Coogee","Cuisine":"American","Halal Status":"Fully Halal","Cost":"$$","Notes":"","Website":""},
-      {"Restaurant Name":"El Jannah","Address":"","Suburb":"Granville","Cuisine":"American","Halal Status":"Fully Halal","Cost":"$","Notes":"Charcoal chicken classic","Website":"https://eljnnah.example"}
-    ];
+    const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBaXpBxZyDbV7-HElSqLQYbNBmNPjVtDliDFLkkTUJ_ffGGYDyxgaA8GJX59an3H4KpXCsa6hi2eiv/pubhtml";
 
     // ====== STATE ======
     let rows = [];
