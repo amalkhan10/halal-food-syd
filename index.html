@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Halal Finder — Sydney</title>
+  <meta name="description" content="Filter halal-friendly restaurants by suburb, cuisine, halal status and price." />
+  <!-- Tailwind CDN (no build step) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Papa Parse for CSV (so you can keep the data in Google Sheets/CSV) -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🥙</text></svg>">
+  <style>
+    /* Optional: nicer scroll/hover */
+    html{scroll-behavior:smooth}
+    .card:hover{transform:translateY(-2px)}
+  </style>
+</head>
+<body class="bg-zinc-50 text-zinc-900">
+  <header class="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-zinc-200">
+    <div class="max-w-6xl mx-auto p-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <h1 class="text-2xl font-bold">Halal Finder <span class="text-zinc-400 text-base">(Sydney)</span></h1>
+      <a href="#how-to-update" class="text-sm underline decoration-dotted">How do I update the data?</a>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-4">
+    <!-- Controls -->
+    <section class="bg-white rounded-2xl shadow-sm border border-zinc-200 p-4 mb-4">
+      <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+        <div class="md:col-span-2">
+          <label class="block text-xs font-medium text-zinc-600">Search</label>
+          <input id="q" type="search" placeholder="restaurant, suburb…" class="w-full mt-1 rounded-xl border-zinc-300 focus:border-zinc-900 focus:ring-zinc-900" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-zinc-600">Suburb</label>
+          <select id="suburb" class="w-full mt-1 rounded-xl border-zinc-300"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-zinc-600">Cuisine</label>
+          <select id="cuisine" class="w-full mt-1 rounded-xl border-zinc-300"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-zinc-600">Halal Status</label>
+          <select id="halal" class="w-full mt-1 rounded-xl border-zinc-300">
+            <option value="">Any</option>
+            <option>Halal Certified</option>
+            <option>Halal Suitable</option>
+            <option>Fully Halal</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-zinc-600">Max Cost</label>
+          <select id="cost" class="w-full mt-1 rounded-xl border-zinc-300">
+            <option value="">Any</option>
+            <option value="$">$</option>
+            <option value="$$">$$</option>
+            <option value="$$$">$$$</option>
+          </select>
+        </div>
+      </div>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <button id="resetBtn" class="px-3 py-2 rounded-xl border bg-white hover:bg-zinc-50">Reset</button>
+        <button id="copyLinkBtn" class="px-3 py-2 rounded-xl border bg-white hover:bg-zinc-50">Share filters</button>
+        <span id="count" class="ml-auto text-sm text-zinc-600"></span>
+      </div>
+    </section>
+
+    <!-- Results grid -->
+    <section id="results" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></section>
+
+    <!-- How to update -->
+    <section id="how-to-update" class="mt-10 bg-white rounded-2xl shadow-sm border border-zinc-200 p-6">
+      <h2 class="text-xl font-semibold mb-2">How do I update the data?</h2>
+      <ol class="list-decimal pl-6 space-y-2 text-sm">
+        <li><strong>Recommended:</strong> keep your data in a <em>Google Sheet</em> with columns exactly named: <code>Restaurant Name</code>, <code>Address</code>, <code>Suburb</code>, <code>Cuisine</code>, <code>Halal Status</code>, <code>Cost</code>, <code>Notes</code> (optional), <code>Website</code> (optional).</li>
+        <li>In Sheets: <em>File → Share → Publish to web</em>, choose <em>CSV</em> for the whole sheet. Copy the link and paste it into <code>SHEET_CSV_URL</code> below.</li>
+        <li>Or, save your Excel as <code>data.csv</code> in the same folder as this HTML and set <code>LOCAL_CSV_PATH = "data.csv"</code>.</li>
+        <li>Commit and push to GitHub. GitHub Pages will serve the new data automatically.</li>
+      </ol>
+      <p class="text-xs text-zinc-500 mt-3">Tip: You can also add duplicate entries when a brand has multiple locations — one row per address.</p>
+    </section>
+  </main>
+
+  <footer class="max-w-6xl mx-auto p-6 text-center text-xs text-zinc-500">Made with ♥ for the Sydney halal scene.</footer>
+
+  <script>
+    // ====== CONFIG ======
+    // If using Google Sheets (Publish to web → CSV link), paste it here:
+    const SHEET_CSV_URL = ""; // e.g. "https://docs.google.com/spreadsheets/d/e/…/pub?output=csv"
+    // If you keep a CSV file in this repo (same folder), put its path here:
+    const LOCAL_CSV_PATH = "data.csv";
+
+    // ====== SAMPLE DATA (used only if no CSV is reachable) ======
+    const SAMPLE_ROWS = [
+      {"Restaurant Name":"Broaster Chicken","Address":"","Suburb":"Auburn","Cuisine":"American","Halal Status":"Halal Certified","Cost":"$","Notes":"","Website":""},
+      {"Restaurant Name":"Chubby Buns","Address":"","Suburb":"Auburn","Cuisine":"American","Halal Status":"Halal Certified","Cost":"$","Notes":"","Website":""},
+      {"Restaurant Name":"Dougie's Grill Burgers","Address":"","Suburb":"Auburn","Cuisine":"American","Halal Status":"Halal Certified","Cost":"$","Notes":"Smash burgers","Website":""},
+      {"Restaurant Name":"Flipp Burgers","Address":"","Suburb":"Auburn","Cuisine":"American","Halal Status":"Halal Certified","Cost":"$","Notes":"","Website":""},
+      {"Restaurant Name":"Nash Brothers","Address":"","Suburb":"Auburn","Cuisine":"American","Halal Status":"Halal Certified","Cost":"$","Notes":"","Website":""},
+      {"Restaurant Name":"Belles Hot Chicken","Address":"","Suburb":"Circular Quay","Cuisine":"American","Halal Status":"Halal Certified","Cost":"$","Notes":"Halal chicken supply at selected stores","Website":""},
+      {"Restaurant Name":"Betty’s Burgers","Address":"","Suburb":"Circular Quay","Cuisine":"American","Halal Status":"Halal Suitable","Cost":"$","Notes":"Ask for no bacon, separate grill not guaranteed","Website":""},
+      {"Restaurant Name":"Belles Hot Chicken","Address":"","Suburb":"Coogee","Cuisine":"American","Halal Status":"Fully Halal","Cost":"$$","Notes":"","Website":""},
+      {"Restaurant Name":"El Jannah","Address":"","Suburb":"Granville","Cuisine":"American","Halal Status":"Fully Halal","Cost":"$","Notes":"Charcoal chicken classic","Website":"https://eljnnah.example"}
+    ];
+
+    // ====== STATE ======
+    let rows = [];
+
+    // ====== UTILS ======
+    const $ = sel => document.querySelector(sel);
+    const uniqueSorted = arr => [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+
+    function readQuery() {
+      const p = new URLSearchParams(location.search);
+      return {
+        q: p.get('q') || '',
+        suburb: p.get('suburb') || '',
+        cuisine: p.get('cuisine') || '',
+        halal: p.get('halal') || '',
+        cost: p.get('cost') || ''
+      };
+    }
+    function writeQuery(filters){
+      const p = new URLSearchParams(filters);
+      history.replaceState(null, '', `${location.pathname}?${p.toString()}`);
+    }
+
+    function normaliseRow(r){
+      // Map possible header typos to our canonical keys
+      return {
+        "Restaurant Name": r["Restaurant Name"] ?? r["Restaurant"] ?? r["Name"] ?? "",
+        "Address": r["Address"] ?? "",
+        "Suburb": r["Suburb"] ?? r["City/Suburb"] ?? "",
+        "Cuisine": r["Cuisine"] ?? r["Cusine"] ?? r["Category"] ?? "",
+        "Halal Status": r["Halal Status"] ?? r["Halal"] ?? r["HalalStatus"] ?? "",
+        "Cost": r["Cost"] ?? r["Price"] ?? r["$"] ?? "",
+        "Notes": r["Notes"] ?? r["Comment"] ?? "",
+        "Website": r["Website"] ?? r["Link"] ?? r["URL"] ?? ""
+      };
+    }
+
+    function renderOptions(id, values, placeholder="Any"){
+      const el = $("#"+id);
+      const current = new URLSearchParams(location.search).get(id) || '';
+      el.innerHTML = `<option value="">${placeholder}</option>` + values.map(v => `<option${v===current? ' selected':''}>${v}</option>`).join('');
+    }
+
+    function applyFilters(filters){
+      let out = rows;
+      const q = filters.q.trim().toLowerCase();
+      if(q){
+        out = out.filter(r => ["Restaurant Name","Suburb","Cuisine","Address","Notes"].some(k => (r[k]||"").toLowerCase().includes(q)));
+      }
+      if(filters.suburb) out = out.filter(r => r["Suburb"] === filters.suburb);
+      if(filters.cuisine) out = out.filter(r => r["Cuisine"] === filters.cuisine);
+      if(filters.halal) out = out.filter(r => r["Halal Status"] === filters.halal);
+      if(filters.cost) out = out.filter(r => (r["Cost"]||"").startsWith(filters.cost));
+      return out;
+    }
+
+    function resultCard(r){
+      const addr = [r.Address, r.Suburb].filter(Boolean).join(', ');
+      const mapQ = encodeURIComponent(addr || r["Restaurant Name"] + " Sydney Australia");
+      const mapUrl = `https://www.google.com/maps/search/?api=1&query=${mapQ}`;
+      const website = r.Website && r.Website.trim() ? r.Website : null;
+      return `
+        <article class="card bg-white rounded-2xl shadow-sm border border-zinc-200 p-4 transition">
+          <div class="flex items-start justify-between gap-2">
+            <h3 class="font-semibold leading-tight">${r["Restaurant Name"] || "Unnamed"}</h3>
+            <span class="text-xs px-2 py-1 rounded-full border ${r["Halal Status"].includes('Certified')?'border-emerald-400 text-emerald-700': r["Halal Status"].includes('Fully')?'border-emerald-400 text-emerald-700':'border-amber-400 text-amber-700'}">${r["Halal Status"] || 'Unknown'}</span>
+          </div>
+          <p class="mt-1 text-sm text-zinc-600">${addr || '<em>address missing</em>'}</p>
+          <p class="mt-1 text-sm"><strong>${r.Cuisine || 'Cuisine N/A'}</strong> · <span>${r.Cost || '—'}</span></p>
+          <p class="mt-2 text-sm text-zinc-700">${(r.Notes||'').trim() ? r.Notes : ''}</p>
+          <div class="mt-3 flex gap-2">
+            <a class="text-sm underline" href="${mapUrl}" target="_blank" rel="noopener">Maps</a>
+            ${website ? `<a class="text-sm underline" href="${website}" target="_blank" rel="noopener">Website</a>`:''}
+          </div>
+        </article>
+      `;
+    }
+
+    function render(filters){
+      const list = applyFilters(filters);
+      $("#results").innerHTML = list.map(resultCard).join('');
+      $("#count").textContent = `${list.length} result${list.length===1?'':'s'}`;
+    }
+
+    function populateFilters(){
+      const suburbs = uniqueSorted(rows.map(r=>r.Suburb));
+      const cuisines = uniqueSorted(rows.map(r=>r.Cuisine));
+      renderOptions('suburb', suburbs, 'Any suburb');
+      renderOptions('cuisine', cuisines, 'Any cuisine');
+    }
+
+    async function loadData(){
+      // Try Sheet first, then local CSV, else sample.
+      const csvUrl = SHEET_CSV_URL || LOCAL_CSV_PATH || null;
+      if (csvUrl){
+        try{
+          const res = await fetch(csvUrl, {cache:'no-store'});
+          if(!res.ok) throw new Error('Fetch failed');
+          const csvText = await res.text();
+          const parsed = Papa.parse(csvText, {header:true});
+          const clean = parsed.data.filter(row => Object.values(row).some(v => (v||'').toString().trim()!==''));
+          return clean.map(normaliseRow);
+        }catch(e){
+          console.warn('CSV load failed, using sample data.', e);
+        }
+      }
+      return SAMPLE_ROWS.map(normaliseRow);
+    }
+
+    function bindControls(){
+      const filters = readQuery();
+      $('#q').value = filters.q;
+      $('#suburb').value = filters.suburb;
+      $('#cuisine').value = filters.cuisine;
+      $('#halal').value = filters.halal;
+      $('#cost').value = filters.cost;
+
+      const onChange = () => {
+        const f = {
+          q: $('#q').value,
+          suburb: $('#suburb').value,
+          cuisine: $('#cuisine').value,
+          halal: $('#halal').value,
+          cost: $('#cost').value
+        };
+        writeQuery(f);
+        render(f);
+      };
+
+      ['q','suburb','cuisine','halal','cost'].forEach(id=>{
+        document.getElementById(id).addEventListener(id==='q'?'input':'change', onChange);
+      });
+
+      document.getElementById('resetBtn').addEventListener('click', () => {
+        ['q','suburb','cuisine','halal','cost'].forEach(id=> document.getElementById(id).value='');
+        writeQuery({q:'', suburb:'', cuisine:'', halal:'', cost:''});
+        render({q:'', suburb:'', cuisine:'', halal:'', cost:''});
+      });
+
+      document.getElementById('copyLinkBtn').addEventListener('click', async () => {
+        await navigator.clipboard.writeText(location.href);
+        const btn = document.getElementById('copyLinkBtn');
+        const old = btn.textContent; btn.textContent = 'Link copied!';
+        setTimeout(()=>btn.textContent=old,1200);
+      });
+    }
+
+    // ====== INIT ======
+    (async function(){
+      rows = await loadData();
+      populateFilters();
+      bindControls();
+      render(readQuery());
+    })();
+  </script>
+</body>
+</html>
