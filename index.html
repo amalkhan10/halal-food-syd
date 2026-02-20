@@ -136,8 +136,20 @@
     function applyFilters(filters){
       let out = rows;
       const q = filters.q.trim().toLowerCase();
-      if(q){
-        out = out.filter(r => ["Restaurant Name","Suburb","Cuisine","Address","Notes"].some(k => (r[k]||"").toLowerCase().includes(q)));
+
+      // Split search into words (tokens), ignore extra spaces
+      const tokens = q ? q.split(/\s+/).filter(Boolean) : [];
+      
+      if(tokens.length){
+        out = out.filter(r => {
+          // Combine searchable fields into one string
+          const haystack = ["Restaurant Name","Suburb","Cuisine","Address","Notes"]
+            .map(k => (r[k] || "").toString().toLowerCase())
+            .join(" ");
+      
+          // Require EVERY token to be present somewhere (order doesn't matter)
+          return tokens.every(t => haystack.includes(t));
+        });
       }
       if(filters.suburb) out = out.filter(r => r["Suburb"] === filters.suburb);
       if(filters.cuisine) out = out.filter(r => r["Cuisine"] === filters.cuisine);
